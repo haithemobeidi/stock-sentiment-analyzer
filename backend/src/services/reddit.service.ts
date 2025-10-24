@@ -14,6 +14,8 @@ export interface RedditPost {
   upvotes: number;
   comments: number;
   createdAt: Date;
+  weight?: number; // Subreddit weight for scoring
+  category?: 'penny' | 'general'; // Subreddit category
 }
 
 /**
@@ -28,13 +30,29 @@ export class RedditService {
   private cache: NodeCache;
   private readonly baseUrl = 'https://www.reddit.com';
 
-  // Target subreddits for stock discussions
+  // Weighted subreddits for stock discussions
+  // Higher weight = more influence on sentiment scoring
   private readonly targetSubreddits = [
-    'wallstreetbets',
-    'stocks',
-    'investing',
-    'StockMarket',
-    'options',
+    // Penny Stock Focused (Higher weight - your focus area)
+    { name: 'pennystocks', weight: 3.0, category: 'penny' },
+    { name: 'RobinHoodPennyStocks', weight: 2.5, category: 'penny' },
+    { name: 'Shortsqueeze', weight: 2.5, category: 'penny' },
+    { name: 'smallstreetbets', weight: 2.0, category: 'penny' },
+
+    // High Volume Retail Trading (Medium-high weight)
+    { name: 'wallstreetbets', weight: 2.0, category: 'general' },
+    { name: 'WallStreetbetsELITE', weight: 1.5, category: 'general' },
+
+    // General Trading (Standard weight)
+    { name: 'stocks', weight: 1.0, category: 'general' },
+    { name: 'investing', weight: 1.0, category: 'general' },
+    { name: 'StockMarket', weight: 1.0, category: 'general' },
+    { name: 'options', weight: 1.0, category: 'general' },
+    { name: 'Daytrading', weight: 1.0, category: 'general' },
+
+    // Swing/Momentum Trading (Medium weight)
+    { name: 'swingtrading', weight: 1.5, category: 'general' },
+    { name: 'Trading', weight: 1.0, category: 'general' },
   ];
 
   constructor() {
@@ -61,15 +79,29 @@ export class RedditService {
     // Search across multiple subreddits
     for (const subreddit of this.targetSubreddits) {
       try {
-        const posts = await this.searchSubreddit(subreddit, ticker, Math.ceil(limit / this.targetSubreddits.length));
-        allPosts.push(...posts);
+        const posts = await this.searchSubreddit(
+          subreddit.name,
+          ticker,
+          Math.ceil(limit / this.targetSubreddits.length)
+        );
+        // Add weight and category to posts
+        const weightedPosts = posts.map(post => ({
+          ...post,
+          weight: subreddit.weight,
+          category: subreddit.category,
+        }));
+        allPosts.push(...weightedPosts);
       } catch (error) {
-        console.error(`Error fetching from r/${subreddit}:`, error);
+        console.error(`Error fetching from r/${subreddit.name}:`, error);
       }
     }
 
-    // Sort by upvotes (most popular first)
-    allPosts.sort((a, b) => b.upvotes - a.upvotes);
+    // Sort by weighted score (upvotes * weight)
+    allPosts.sort((a, b) => {
+      const scoreA = a.upvotes * (a.weight || 1);
+      const scoreB = b.upvotes * (b.weight || 1);
+      return scoreB - scoreA;
+    });
 
     // Limit total results
     const results = allPosts.slice(0, limit);
@@ -167,10 +199,17 @@ export class RedditService {
 
     for (const subreddit of this.targetSubreddits) {
       try {
-        const posts = await this.fetchHotPosts(subreddit, 50);
+        const posts = await this.fetchHotPosts(subreddit.name, 50);
+
+        // Add weight and category to posts
+        const weightedPosts = posts.map(post => ({
+          ...post,
+          weight: subreddit.weight,
+          category: subreddit.category,
+        }));
 
         // Extract tickers from titles and content
-        for (const post of posts) {
+        for (const post of weightedPosts) {
           const tickers = this.extractTickers(post.title + ' ' + post.content);
 
           for (const ticker of tickers) {
@@ -181,7 +220,7 @@ export class RedditService {
           }
         }
       } catch (error) {
-        console.error(`Error scanning r/${subreddit}:`, error);
+        console.error(`Error scanning r/${subreddit.name}:`, error);
       }
     }
 

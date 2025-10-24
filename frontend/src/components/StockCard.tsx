@@ -44,9 +44,16 @@ export const StockCard: React.FC<StockCardProps> = ({ analysis, onClick }) => {
 
   return (
     <div
-      className={`bg-gradient-to-br ${signalColors[pump.signal]} border rounded-lg p-6 cursor-pointer hover:scale-105 transition-transform duration-200`}
+      className={`bg-gradient-to-br ${signalColors[pump.signal]} border rounded-lg p-6 cursor-pointer hover:scale-105 transition-transform duration-200 relative`}
       onClick={onClick}
     >
+      {/* Penny Stock Badge */}
+      {analysis.classification?.isPennyStock && (
+        <div className="absolute top-3 right-3 bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-semibold z-10">
+          Penny
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -54,6 +61,11 @@ export const StockCard: React.FC<StockCardProps> = ({ analysis, onClick }) => {
           <p className={`text-sm ${signalTextColors[pump.signal]}`}>
             {phaseEmojis[pump.phase]} {pump.phase === 'none' ? 'Normal' : `${pump.phase} pump`}
           </p>
+          {analysis.classification && (
+            <p className="text-xs text-gray-400 mt-1">
+              {analysis.classification.marketCapFormatted} • {analysis.classification.category} cap
+            </p>
+          )}
         </div>
         <div className={`text-3xl font-bold ${signalTextColors[pump.signal]}`}>
           {pump.signal === 'green' ? '🟢' : pump.signal === 'yellow' ? '🟡' : '🔴'}

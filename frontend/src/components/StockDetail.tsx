@@ -106,6 +106,52 @@ export const StockDetail: React.FC<StockDetailProps> = ({ analysis, onClose }) =
             </div>
           </div>
 
+          {/* Stock Classification - Low Capital Suitability */}
+          {analysis.classification && (
+            <div className="bg-gray-700 rounded-lg p-6 border-2 border-purple-500/30">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                💰 Low Capital Suitability
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <div className="text-gray-400 text-sm">Market Cap</div>
+                  <div className="text-lg font-semibold">{analysis.classification.marketCapFormatted}</div>
+                  <div className="text-xs text-gray-500">{analysis.classification.category} cap</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 text-sm">Penny Stock</div>
+                  <div className="text-lg font-semibold">
+                    {analysis.classification.isPennyStock ? (
+                      <span className="text-purple-400">Yes</span>
+                    ) : (
+                      <span className="text-gray-400">No</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-400 text-sm">Risk Level</div>
+                  <div className="text-sm">{analysis.classification.riskLevel}</div>
+                </div>
+              </div>
+              <div className="bg-gray-800 rounded p-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`text-2xl ${analysis.classification.suitableForLowCapital ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {analysis.classification.suitableForLowCapital ? '✅' : '⚠️'}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold mb-1">
+                      {analysis.classification.suitableForLowCapital ? 'Good for Low Capital' : 'Caution Advised'}
+                    </div>
+                    <div className="text-sm text-gray-300">{analysis.classification.suitabilityReason}</div>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-400">
+                  <span className="font-semibold">Capital Needed:</span> {analysis.classification.capitalNeeded}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Sentiment Information */}
           <div className="bg-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">

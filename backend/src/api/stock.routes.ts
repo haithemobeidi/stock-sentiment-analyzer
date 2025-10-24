@@ -3,6 +3,13 @@ import { redditService } from '../services/reddit.service';
 import { yahooService } from '../services/yahoo.service';
 import { sentimentService } from '../services/sentiment.service';
 import { pumpDetectionService } from '../services/pump-detection.service';
+import {
+  classifyByMarketCap,
+  isPennyStock,
+  formatMarketCap,
+  getRiskLevel,
+  getSuitabilityForLowCapital,
+} from '../utils/stock-classifier';
 
 const router = Router();
 
@@ -32,11 +39,11 @@ router.get('/:ticker/analyze', async (req, res) => {
     const postTexts = redditPosts.map(post => `${post.title} ${post.content}`);
     const sentimentAnalysis = sentimentService.analyzeMultiple(postTexts);
 
-    // Weighted sentiment (by upvotes)
+    // Weighted sentiment (by upvotes * subreddit weight)
     const weightedSentiment = sentimentService.analyzeWeighted(
       redditPosts.map(post => ({
         text: `${post.title} ${post.content}`,
-        weight: post.upvotes + 1,
+        weight: (post.upvotes + 1) * (post.weight || 1), // Multiply by subreddit weight
       }))
     );
 
@@ -45,6 +52,15 @@ router.get('/:ticker/analyze', async (req, res) => {
       weightedSentiment,
       priceData,
       redditPosts.length
+    );
+
+    // Classify stock by market cap
+    const classification = classifyByMarketCap(priceData.marketCap);
+    const pennyStock = isPennyStock(priceData.currentPrice, priceData.marketCap);
+    const suitability = getSuitabilityForLowCapital(
+      priceData.currentPrice,
+      priceData.marketCap,
+      priceData.volume
     );
 
     // Prepare response
@@ -64,6 +80,18 @@ router.get('/:ticker/analyze', async (req, res) => {
         volume: priceData.volume,
         avgVolume: priceData.avgVolume,
         volumeRatio: priceData.avgVolume > 0 ? priceData.volume / priceData.avgVolume : 1,
+      },
+
+      // Stock classification
+      classification: {
+        marketCap: priceData.marketCap,
+        marketCapFormatted: formatMarketCap(priceData.marketCap),
+        category: classification,
+        isPennyStock: pennyStock,
+        riskLevel: getRiskLevel(classification),
+        suitableForLowCapital: suitability.suitable,
+        suitabilityReason: suitability.reason,
+        capitalNeeded: suitability.capitalNeeded,
       },
 
       // Sentiment data
@@ -275,7 +303,7 @@ router.post('/batch-analyze', async (req, res) => {
 
 /**
  * GET /api/stocks/trending
- * Get trending stocks from Reddit
+ * Get trending stocks from Reddit with weighted scoring
  */
 router.get('/trending', async (req, res) => {
   try {
@@ -283,14 +311,27 @@ router.get('/trending', async (req, res) => {
 
     const tickerMentions = await redditService.scanAllSubreddits();
 
-    // Sort by mention count
+    // Calculate weighted scores
     const trending = Array.from(tickerMentions.entries())
-      .map(([ticker, posts]) => ({
-        ticker,
-        mentionCount: posts.length,
-        totalUpvotes: posts.reduce((sum, post) => sum + post.upvotes, 0),
-      }))
-      .sort((a, b) => b.mentionCount - a.mentionCount)
+      .map(([ticker, posts]) => {
+        // Calculate weighted score: sum of (upvotes * subreddit weight)
+        const weightedScore = posts.reduce((sum, post) => {
+          return sum + (post.upvotes + 1) * (post.weight || 1);
+        }, 0);
+
+        // Count penny stock mentions
+        const pennyMentions = posts.filter(p => p.category === 'penny').length;
+
+        return {
+          ticker,
+          mentionCount: posts.length,
+          totalUpvotes: posts.reduce((sum, post) => sum + post.upvotes, 0),
+          weightedScore,
+          pennyMentions,
+          isPennyFocused: pennyMentions > posts.length / 2, // More than 50% from penny subs
+        };
+      })
+      .sort((a, b) => b.weightedScore - a.weightedScore) // Sort by weighted score
       .slice(0, 20);
 
     console.log(`✅ Found ${trending.length} trending stocks`);
@@ -303,6 +344,94 @@ router.get('/trending', async (req, res) => {
     console.error('Error fetching trending:', error);
     res.status(500).json({
       error: 'Trending fetch failed',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/stocks/top-today
+ * Get top 3 most talked about stocks today with full analysis
+ */
+router.get('/top-today', async (req, res) => {
+  try {
+    console.log('🔍 Finding top 3 most talked about stocks...');
+
+    const tickerMentions = await redditService.scanAllSubreddits();
+
+    // Get top 3 by weighted score
+    const top3Tickers = Array.from(tickerMentions.entries())
+      .map(([ticker, posts]) => {
+        const weightedScore = posts.reduce((sum, post) => {
+          return sum + (post.upvotes + 1) * (post.weight || 1);
+        }, 0);
+
+        return { ticker, posts, weightedScore };
+      })
+      .sort((a, b) => b.weightedScore - a.weightedScore)
+      .slice(0, 3);
+
+    // Analyze each of the top 3
+    const topStocksAnalysis = await Promise.all(
+      top3Tickers.map(async ({ ticker, posts, weightedScore }) => {
+        try {
+          // Get price data
+          const priceData = await yahooService.fetchCompleteStockData(ticker);
+          if (!priceData) return null;
+
+          // Analyze sentiment
+          const weightedSentiment = sentimentService.analyzeWeighted(
+            posts.map(post => ({
+              text: `${post.title} ${post.content}`,
+              weight: (post.upvotes + 1) * (post.weight || 1),
+            }))
+          );
+
+          // Classify stock
+          const classification = classifyByMarketCap(priceData.marketCap);
+          const pennyStock = isPennyStock(priceData.currentPrice, priceData.marketCap);
+
+          // Pump detection
+          const pumpDetection = pumpDetectionService.detectPumpPhase(
+            weightedSentiment,
+            priceData,
+            posts.length
+          );
+
+          return {
+            ticker,
+            price: priceData.currentPrice,
+            change1d: priceData.change1d,
+            sentiment: weightedSentiment.score,
+            sentimentLabel: weightedSentiment.label,
+            mentionCount: posts.length,
+            weightedScore,
+            signal: pumpDetection.signal,
+            phase: pumpDetection.phase,
+            isPennyStock: pennyStock,
+            marketCapFormatted: formatMarketCap(priceData.marketCap),
+            category: classification,
+          };
+        } catch (error) {
+          console.error(`Error analyzing top stock ${ticker}:`, error);
+          return null;
+        }
+      })
+    );
+
+    const successful = topStocksAnalysis.filter(Boolean);
+
+    console.log(`✅ Top 3 analysis complete`);
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      topStocks: successful,
+      message: 'Most talked about stocks on trading subreddits today',
+    });
+  } catch (error: any) {
+    console.error('Error fetching top stocks:', error);
+    res.status(500).json({
+      error: 'Top stocks fetch failed',
       message: error.message,
     });
   }

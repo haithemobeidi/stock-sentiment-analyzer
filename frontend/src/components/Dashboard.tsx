@@ -3,6 +3,7 @@ import { Search, RefreshCw, Plus, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { StockCard } from './StockCard';
 import { StockDetail } from './StockDetail';
+import { Top3Stocks } from './Top3Stocks';
 import { api, StockAnalysis } from '../services/api';
 
 export const Dashboard: React.FC = () => {
@@ -149,6 +150,10 @@ export const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-6">
+        {/* Top 3 Most Talked About Today */}
+        <Top3Stocks />
+
+        {/* Your Watchlist */}
         {loading && analyses.size === 0 ? (
           <div className="text-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-green-500 mx-auto mb-4"></div>
@@ -159,19 +164,24 @@ export const Dashboard: React.FC = () => {
             <p className="text-gray-400 text-lg">No stocks in watchlist. Add one to get started!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedAnalyses.map((analysis) => (
-              <div key={analysis.ticker} className="relative">
-                <button
-                  onClick={() => removeTicker(analysis.ticker)}
-                  className="absolute -top-2 -right-2 z-10 bg-red-600 hover:bg-red-700 rounded-full p-1 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <StockCard analysis={analysis} onClick={() => setSelectedStock(analysis)} />
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold">📊 Your Watchlist</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedAnalyses.map((analysis) => (
+                <div key={analysis.ticker} className="relative">
+                  <button
+                    onClick={() => removeTicker(analysis.ticker)}
+                    className="absolute -top-2 -right-2 z-10 bg-red-600 hover:bg-red-700 rounded-full p-1 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <StockCard analysis={analysis} onClick={() => setSelectedStock(analysis)} />
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Signal Legend */}

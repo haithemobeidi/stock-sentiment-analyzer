@@ -17,6 +17,16 @@ export interface StockAnalysis {
     avgVolume: number;
     volumeRatio: number;
   };
+  classification?: {
+    marketCap?: number;
+    marketCapFormatted: string;
+    category: 'nano' | 'micro' | 'small' | 'mid' | 'large' | 'mega';
+    isPennyStock: boolean;
+    riskLevel: string;
+    suitableForLowCapital: boolean;
+    suitabilityReason: string;
+    capitalNeeded: string;
+  };
   sentiment: {
     score: number;
     label: 'positive' | 'neutral' | 'negative';
@@ -91,6 +101,14 @@ class ApiClient {
    */
   async getTrendingStocks() {
     const response = await axios.get(`${API_BASE_URL}/stocks/trending`);
+    return response.data;
+  }
+
+  /**
+   * Get top 3 most talked about stocks today
+   */
+  async getTopStocksToday() {
+    const response = await axios.get(`${API_BASE_URL}/stocks/top-today`);
     return response.data;
   }
 
