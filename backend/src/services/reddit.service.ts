@@ -29,6 +29,8 @@ export interface RedditPost {
 export class RedditService {
   private cache: NodeCache;
   private readonly baseUrl = 'https://www.reddit.com';
+  private lastRequestTime: number = 0;
+  private readonly minRequestInterval = 500; // Minimum 500ms between requests
 
   // Weighted subreddits for stock discussions
   // Higher weight = more influence on sentiment scoring
@@ -56,8 +58,23 @@ export class RedditService {
   ];
 
   constructor() {
-    // Cache responses for 5 minutes
-    this.cache = new NodeCache({ stdTTL: 300 });
+    // Cache responses for 15 minutes to reduce Reddit API calls
+    this.cache = new NodeCache({ stdTTL: 900 });
+  }
+
+  /**
+   * Add delay between requests to avoid rate limiting
+   */
+  private async throttleRequest(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+
+    if (timeSinceLastRequest < this.minRequestInterval) {
+      const delay = this.minRequestInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    this.lastRequestTime = Date.now();
   }
 
   /**
@@ -76,9 +93,12 @@ export class RedditService {
 
     const allPosts: RedditPost[] = [];
 
-    // Search across multiple subreddits
+    // Search across multiple subreddits with throttling
     for (const subreddit of this.targetSubreddits) {
       try {
+        // Add delay between requests to avoid rate limiting
+        await this.throttleRequest();
+
         const posts = await this.searchSubreddit(
           subreddit.name,
           ticker,
@@ -113,9 +133,17 @@ export class RedditService {
   }
 
   /**
-   * Search a specific subreddit for ticker mentions
+   * Search a specific subreddit for ticker mentions with retry logic
    */
-  private async searchSubreddit(subreddit: string, ticker: string, limit: number = 25): Promise<RedditPost[]> {
+  private async searchSubreddit(
+    subreddit: string,
+    ticker: string,
+    limit: number = 25,
+    retryCount: number = 0
+  ): Promise<RedditPost[]> {
+    const maxRetries = 3;
+    const baseDelay = 2000; // 2 seconds base delay
+
     try {
       // Use Reddit's JSON API (append .json to any URL)
       const searchUrl = `${this.baseUrl}/r/${subreddit}/search.json`;
@@ -139,11 +167,21 @@ export class RedditService {
       return posts.map((post: any) => this.parseRedditPost(post.data)).filter(Boolean);
     } catch (error: any) {
       if (error.response?.status === 429) {
-        console.warn(`⚠️ Rate limited by Reddit for r/${subreddit}`);
+        if (retryCount < maxRetries) {
+          // Exponential backoff: 2s, 4s, 8s
+          const delay = baseDelay * Math.pow(2, retryCount);
+          console.warn(`⚠️ Rate limited by Reddit for r/${subreddit}, retrying in ${delay / 1000}s... (attempt ${retryCount + 1}/${maxRetries})`);
+
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.searchSubreddit(subreddit, ticker, limit, retryCount + 1);
+        } else {
+          console.error(`❌ Rate limit exceeded for r/${subreddit} after ${maxRetries} retries`);
+          return [];
+        }
       } else {
         console.error(`Error searching r/${subreddit}:`, error.message);
+        return [];
       }
-      return [];
     }
   }
 
