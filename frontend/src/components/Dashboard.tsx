@@ -7,7 +7,11 @@ import { Top3Stocks } from './Top3Stocks';
 import { api, StockAnalysis } from '../services/api';
 
 export const Dashboard: React.FC = () => {
-  const [watchlist, setWatchlist] = useState<string[]>(['NVDA', 'TSLA', 'AAPL']);
+  // Load watchlist from localStorage, or use default if not found
+  const [watchlist, setWatchlist] = useState<string[]>(() => {
+    const saved = localStorage.getItem('stockWatchlist');
+    return saved ? JSON.parse(saved) : ['NVDA', 'TSLA', 'AAPL'];
+  });
   const [analyses, setAnalyses] = useState<Map<string, StockAnalysis>>(new Map());
   const [selectedStock, setSelectedStock] = useState<StockAnalysis | null>(null);
   const [newTicker, setNewTicker] = useState('');
@@ -32,6 +36,11 @@ export const Dashboard: React.FC = () => {
     setAnalyses(newAnalyses);
     setLoading(false);
   };
+
+  // Save watchlist to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('stockWatchlist', JSON.stringify(watchlist));
+  }, [watchlist]);
 
   // Initial load
   useEffect(() => {
