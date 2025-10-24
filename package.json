@@ -1,0 +1,24 @@
+{
+  "name": "stock-sentiment-analyzer",
+  "version": "1.0.0",
+  "description": "Real-time stock sentiment analysis with VADER + pump detection",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "npm run dev"
+  },
+  "keywords": [
+    "stock",
+    "sentiment",
+    "analysis",
+    "vader",
+    "pump-detection"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

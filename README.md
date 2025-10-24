@@ -29,30 +29,32 @@ A personal stock sentiment analysis tool that scans social media (Reddit, Twitte
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL 16+
-- API Keys (optional for enhanced features)
+- PostgreSQL 16+ (optional - app works without database)
 
-### Installation
+### Quick Start
 
-1. **Backend Setup**
+```bash
+# Clone the repository
+git clone https://github.com/haithemobeidi/stock-sentiment-analyzer.git
+cd stock-sentiment-analyzer
+
+# Install all dependencies (one time only)
+npm run install:all
+
+# Start both servers with one command
+npm start
+```
+
+Open `http://localhost:3000` in your browser!
+
+### Database Setup (Optional)
+
+If you want database persistence:
+
 ```bash
 cd backend
-npm install
 cp .env.example .env
-# Edit .env with your database credentials
-npm run dev
-```
-
-2. **Frontend Setup**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-3. **Database Setup**
-```bash
-cd backend
+# Edit .env with your PostgreSQL credentials
 npm run db:push
 ```
 

@@ -1,21 +1,38 @@
 # Stock Sentiment Analyzer - Setup Guide
 
-## Quick Start (Without Database)
+## ⚡ One-Command Start (Easiest!)
 
-The MVP can run **without PostgreSQL** for testing purposes. Some features will be limited but core functionality works.
+```bash
+# First time only - install all dependencies
+npm run install:all
+
+# Every time - start both backend and frontend together
+npm start
+```
+
+That's it! Both servers will start automatically:
+- Backend: `http://localhost:5000`
+- Frontend: `http://localhost:3000`
+
+Visit `http://localhost:3000` to see the dashboard!
+
+---
+
+## Manual Start (Alternative)
+
+If you prefer to run servers separately:
 
 ### Backend Setup
 
 ```bash
 cd backend
 npm install
-cp .env.example .env
 npm run dev
 ```
 
 The backend will start on `http://localhost:5000`
 
-### Frontend Setup
+### Frontend Setup (in new terminal)
 
 ```bash
 cd frontend
@@ -24,8 +41,6 @@ npm run dev
 ```
 
 The frontend will start on `http://localhost:3000`
-
-Visit `http://localhost:3000` to see the dashboard!
 
 ## Testing the Application
 
