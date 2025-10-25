@@ -25,7 +25,7 @@ export interface StockAnalysisResponse {
   };
   sentiment: {
     score: number;
-    label: 'positive' | 'neutral' | 'negative';
+    label: 'Very Bullish' | 'Bullish' | 'Neutral' | 'Bearish' | 'Very Bearish';
     confidence: number;
     mentionCount: number;
     distribution: {
@@ -33,6 +33,28 @@ export interface StockAnalysisResponse {
       neutral: number;
       negative: number;
     };
+    // Multi-source breakdown
+    sources?: {
+      finnhub?: {
+        score: number;
+        mentions: number;
+        confidence: number;
+        weight: number;
+      };
+      alphaVantage?: {
+        score: number;
+        articles: number;
+        confidence: number;
+        weight: number;
+      };
+      reddit?: {
+        score: number;
+        posts: number;
+        confidence: number;
+        weight: number;
+      };
+    };
+    sourcesUsed?: string[];
   };
   pump: {
     phase: 'early' | 'mid' | 'late' | 'post' | 'none';

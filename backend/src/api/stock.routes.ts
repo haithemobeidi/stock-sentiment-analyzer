@@ -3,6 +3,7 @@ import { redditService } from '../services/reddit.service';
 import { yahooService } from '../services/yahoo.service';
 import { sentimentService } from '../services/sentiment.service';
 import { pumpDetectionService } from '../services/pump-detection.service';
+import { sentimentAggregator } from '../services/sentiment-aggregator.service';
 import {
   classifyByMarketCap,
   isPennyStock,
@@ -23,9 +24,10 @@ router.get('/:ticker/analyze', async (req, res) => {
     console.log(`📊 Analyzing ${ticker}...`);
 
     // Fetch data from all sources in parallel
-    const [priceData, redditPosts] = await Promise.all([
+    const [priceData, redditPosts, aggregatedSentiment] = await Promise.all([
       yahooService.fetchCompleteStockData(ticker.toUpperCase()),
       redditService.fetchStockMentions(ticker.toUpperCase(), 50),
+      sentimentAggregator.aggregateSentiment(ticker.toUpperCase()),
     ]);
 
     if (!priceData) {
@@ -35,23 +37,22 @@ router.get('/:ticker/analyze', async (req, res) => {
       });
     }
 
-    // Analyze sentiment from Reddit posts
+    // Analyze sentiment distribution from Reddit posts (for distribution metrics)
     const postTexts = redditPosts.map(post => `${post.title} ${post.content}`);
     const sentimentAnalysis = sentimentService.analyzeMultiple(postTexts);
 
-    // Weighted sentiment (by upvotes * subreddit weight)
-    const weightedSentiment = sentimentService.analyzeWeighted(
-      redditPosts.map(post => ({
-        text: `${post.title} ${post.content}`,
-        weight: (post.upvotes + 1) * (post.weight || 1), // Multiply by subreddit weight
-      }))
-    );
+    // Use aggregated multi-source sentiment for pump detection
+    const sentimentForPump = {
+      score: aggregatedSentiment.overallScore,
+      label: aggregatedSentiment.overallLabel,
+      confidence: aggregatedSentiment.confidence,
+    };
 
-    // Detect pump phase
+    // Detect pump phase using aggregated sentiment
     const pumpDetection = pumpDetectionService.detectPumpPhase(
-      weightedSentiment,
+      sentimentForPump,
       priceData,
-      redditPosts.length
+      aggregatedSentiment.totalMentions
     );
 
     // Classify stock by market cap
@@ -94,13 +95,16 @@ router.get('/:ticker/analyze', async (req, res) => {
         capitalNeeded: suitability.capitalNeeded,
       },
 
-      // Sentiment data
+      // Sentiment data (multi-source aggregated)
       sentiment: {
-        score: weightedSentiment.score,
-        label: weightedSentiment.label,
-        confidence: weightedSentiment.confidence,
-        mentionCount: redditPosts.length,
+        score: aggregatedSentiment.overallScore,
+        label: aggregatedSentiment.overallLabel,
+        confidence: aggregatedSentiment.confidence,
+        mentionCount: aggregatedSentiment.totalMentions,
         distribution: sentimentAnalysis.distribution,
+        // Multi-source breakdown
+        sources: aggregatedSentiment.sources,
+        sourcesUsed: aggregatedSentiment.sourcesUsed,
       },
 
       // Pump detection
