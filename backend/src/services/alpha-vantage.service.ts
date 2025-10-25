@@ -161,7 +161,7 @@ export class AlphaVantageService {
       return null;
     }
 
-    const ticker Upper = ticker.toUpperCase();
+    const tickerUpper = ticker.toUpperCase();
 
     // Filter and process articles
     const relevantArticles = response.feed

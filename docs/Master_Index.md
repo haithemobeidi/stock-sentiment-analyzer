@@ -13,6 +13,7 @@ Complete catalog of all files in the Stock Sentiment Analyzer project.
 - **docs/Master_Index.md** - This file
 - **docs/handoffs/HANDOFF_TEMPLATE.md** - Template for session handoffs
 - **docs/handoffs/Handoff_10-24-2025_12-38-29_EST.md** - Session 1 handoff
+- **docs/handoffs/Handoff_10-24-2025_20-53-16_EST.md** - Session 2 handoff
 
 ---
 
@@ -52,12 +53,25 @@ Complete catalog of all files in the Stock Sentiment Analyzer project.
   - POST /api/stocks/batch-analyze - Batch analysis
   - GET /api/stocks/trending - Weighted trending stocks
   - GET /api/stocks/top-today - Top 3 most talked about
+- **backend/src/api/user-tracking.routes.ts** - User tracking endpoints (177 lines)
+  - GET /api/users/tracked - Get all tracked users
+  - GET /api/users/top - Get top performing users
+  - POST /api/users/track - Add user to track
+  - DELETE /api/users/track/:platform/:username - Stop tracking
+  - GET /api/users/:platform/:username/picks - Get user's picks
+  - GET /api/users/picks/recent - Recent picks from all users
+  - POST /api/users/picks - Record new pick
+  - GET /api/users/statistics - Tracking statistics
 
 ### Services Layer
-- **backend/src/services/reddit.service.ts** - Reddit API integration with weighted scoring (250+ lines)
+- **backend/src/services/reddit.service.ts** - Reddit API integration with weighted scoring (270+ lines)
 - **backend/src/services/yahoo.service.ts** - Yahoo Finance integration (230+ lines)
 - **backend/src/services/sentiment.service.ts** - VADER sentiment analysis (180+ lines)
 - **backend/src/services/pump-detection.service.ts** - Pump phase detection algorithm (170+ lines)
+- **backend/src/services/finnhub.service.ts** - Finnhub social sentiment (Twitter+Reddit) (185 lines)
+- **backend/src/services/alpha-vantage.service.ts** - Alpha Vantage news sentiment (273 lines)
+- **backend/src/services/sentiment-aggregator.service.ts** - Multi-source aggregation (279 lines)
+- **backend/src/services/user-tracking.service.ts** - User/influencer tracking system (346 lines)
 
 ### Utilities
 - **backend/src/utils/stock-classifier.ts** - Market cap classification and suitability (131 lines)
@@ -93,17 +107,17 @@ Complete catalog of all files in the Stock Sentiment Analyzer project.
 ## Project Stats
 
 ### Lines of Code (Approximate)
-- **Backend**: ~1,400 lines
-- **Frontend**: ~800 lines
-- **Documentation**: ~1,000 lines
-- **Total**: ~3,200 lines
+- **Backend**: ~3,200 lines
+- **Frontend**: ~1,000 lines
+- **Documentation**: ~2,500 lines
+- **Total**: ~6,700 lines
 
 ### File Count
-- **Documentation**: 7 files
+- **Documentation**: 8 files
 - **Configuration**: 13 files
-- **Backend Source**: 11 files
+- **Backend Source**: 16 files
 - **Frontend Source**: 8 files
-- **Total**: 39 files (excluding node_modules)
+- **Total**: 45 files (excluding node_modules)
 
 ### Key Technologies
 - **Backend**: TypeScript, Express, VADER, Axios, Drizzle
@@ -122,6 +136,6 @@ Complete catalog of all files in the Stock Sentiment Analyzer project.
 
 ---
 
-**Last Updated**: 10/24/2025 12:38:29 EST
-**Total Files**: 39 (excluding builds and node_modules)
-**Project Size**: ~3,200 lines of code
+**Last Updated**: 10/24/2025 20:53:16 EST
+**Total Files**: 45 (excluding builds and node_modules)
+**Project Size**: ~6,700 lines of code

@@ -166,8 +166,8 @@ export const StockDetail: React.FC<StockDetailProps> = ({ analysis, onClose }) =
               <div>
                 <div className="text-gray-400 text-sm">Sentiment</div>
                 <div className={`text-lg font-semibold ${
-                  sentiment.label === 'positive' ? 'text-green-400' :
-                  sentiment.label === 'negative' ? 'text-red-400' : 'text-gray-400'
+                  sentiment.label === 'Very Bullish' || sentiment.label === 'Bullish' ? 'text-green-400' :
+                  sentiment.label === 'Very Bearish' || sentiment.label === 'Bearish' ? 'text-red-400' : 'text-gray-400'
                 }`}>
                   {sentiment.label}
                 </div>
@@ -213,6 +213,83 @@ export const StockDetail: React.FC<StockDetailProps> = ({ analysis, onClose }) =
                 />
               </div>
             </div>
+
+            {/* Multi-Source Sentiment Breakdown */}
+            {sentiment.sources && sentiment.sourcesUsed && sentiment.sourcesUsed.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-600">
+                <h4 className="text-sm font-semibold mb-3 text-gray-300">
+                  Data Sources ({sentiment.sourcesUsed.length})
+                </h4>
+                <div className="space-y-3">
+                  {sentiment.sources.finnhub && (
+                    <div className="bg-gray-800 rounded p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="text-sm font-medium">Finnhub (Reddit + Twitter)</div>
+                        <div className="text-xs text-gray-400">Weight: {(sentiment.sources.finnhub.weight * 100).toFixed(0)}%</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <div className="text-gray-500">Score</div>
+                          <div className="font-semibold">{(sentiment.sources.finnhub.score * 100).toFixed(0)}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Mentions</div>
+                          <div className="font-semibold">{sentiment.sources.finnhub.mentions}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Confidence</div>
+                          <div className="font-semibold">{(sentiment.sources.finnhub.confidence * 100).toFixed(0)}%</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {sentiment.sources.alphaVantage && (
+                    <div className="bg-gray-800 rounded p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="text-sm font-medium">Alpha Vantage (News)</div>
+                        <div className="text-xs text-gray-400">Weight: {(sentiment.sources.alphaVantage.weight * 100).toFixed(0)}%</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <div className="text-gray-500">Score</div>
+                          <div className="font-semibold">{(sentiment.sources.alphaVantage.score * 100).toFixed(0)}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Articles</div>
+                          <div className="font-semibold">{sentiment.sources.alphaVantage.articles}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Confidence</div>
+                          <div className="font-semibold">{(sentiment.sources.alphaVantage.confidence * 100).toFixed(0)}%</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {sentiment.sources.reddit && (
+                    <div className="bg-gray-800 rounded p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="text-sm font-medium">Reddit (Weighted)</div>
+                        <div className="text-xs text-gray-400">Weight: {(sentiment.sources.reddit.weight * 100).toFixed(0)}%</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <div className="text-gray-500">Score</div>
+                          <div className="font-semibold">{(sentiment.sources.reddit.score * 100).toFixed(0)}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Posts</div>
+                          <div className="font-semibold">{sentiment.sources.reddit.posts}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Confidence</div>
+                          <div className="font-semibold">{(sentiment.sources.reddit.confidence * 100).toFixed(0)}%</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Pump Detection Breakdown - Show Your Work */}
