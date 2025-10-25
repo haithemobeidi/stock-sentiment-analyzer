@@ -1,11 +1,4 @@
-// Load environment variables FIRST before any other imports
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Explicitly specify .env file location (backend directory)
-dotenv.config({ path: path.join(process.cwd(), '.env') });
-
-// Now import everything else
+// Environment variables loaded by tsx --env-file flag
 import express from 'express';
 import cors from 'cors';
 import stockRoutes from './api/stock.routes';
