@@ -139,3 +139,86 @@ export const systemLogs = pgTable('system_logs', {
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+/**
+ * Tracked influencers/users whose stock picks we want to monitor
+ * Tracks performance of specific users from Reddit, StockTwits, etc.
+ */
+export const trackedUsers = pgTable('tracked_users', {
+  id: serial('id').primaryKey(),
+  platform: text('platform').notNull(), // 'reddit', 'stocktwits', 'twitter'
+  username: text('username').notNull(), // Platform-specific username
+  displayName: text('display_name'), // Human-readable name
+
+  // Performance metrics
+  totalPicks: integer('total_picks').default(0), // Total number of stock picks made
+  successfulPicks: integer('successful_picks').default(0), // Picks that gained 5%+
+  failedPicks: integer('failed_picks').default(0), // Picks that lost 5%+
+  accuracyRate: real('accuracy_rate').default(0), // successfulPicks / totalPicks
+  averageROI: real('average_roi').default(0), // Average % gain/loss across all picks
+
+  // Reputation scoring
+  reputationScore: real('reputation_score').default(0), // Weighted score 0-100
+  trustLevel: text('trust_level').default('unverified'), // 'unverified', 'emerging', 'trusted', 'expert'
+
+  // Activity tracking
+  firstSeenAt: timestamp('first_seen_at').defaultNow(),
+  lastPickAt: timestamp('last_pick_at'), // Most recent pick timestamp
+  isActive: boolean('is_active').default(true), // Whether still actively tracked
+
+  // Metadata
+  addedAt: timestamp('added_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  notes: text('notes'), // Admin notes about this user
+
+  // Unique constraint: one user per platform
+  // Note: Drizzle ORM unique constraint syntax varies, manual SQL: UNIQUE(platform, username)
+});
+
+/**
+ * Individual stock picks made by tracked users
+ * Used to calculate user performance metrics
+ */
+export const userPicks = pgTable('user_picks', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => trackedUsers.id).notNull(),
+  ticker: text('ticker').notNull(), // Stock symbol picked
+
+  // Pick details
+  sentiment: text('sentiment').notNull(), // 'bullish', 'bearish', 'neutral'
+  confidence: text('confidence'), // 'high', 'medium', 'low' (if mentioned)
+  mentionType: text('mention_type').default('general'), // 'dd' (due diligence), 'yolo', 'general'
+
+  // Price tracking
+  entryPrice: real('entry_price'), // Price when pick was made
+  currentPrice: real('current_price'), // Latest price (updated periodically)
+  peakPrice: real('peak_price'), // Highest price reached after pick
+  lowestPrice: real('lowest_price'), // Lowest price reached after pick
+
+  // Performance metrics
+  currentROI: real('current_roi').default(0), // (currentPrice - entryPrice) / entryPrice * 100
+  peakROI: real('peak_roi').default(0), // Best ROI achieved
+  worstROI: real('worst_roi').default(0), // Worst ROI reached
+
+  // Outcome classification
+  outcome: text('outcome'), // 'pending', 'successful', 'failed', 'neutral'
+  outcomeResolvedAt: timestamp('outcome_resolved_at'), // When outcome was determined
+
+  // Source information
+  platform: text('platform').notNull(), // 'reddit', 'stocktwits'
+  postUrl: text('post_url'), // Link to original post/comment
+  postTitle: text('post_title'), // Original post title
+  postContent: text('post_content'), // Original post text
+
+  // Engagement metrics (from original post)
+  upvotes: integer('upvotes').default(0),
+  comments: integer('comments').default(0),
+
+  // Timestamps
+  pickedAt: timestamp('picked_at').notNull(), // When user made the pick
+  fetchedAt: timestamp('fetched_at').defaultNow(), // When we detected the pick
+  lastUpdatedAt: timestamp('last_updated_at').defaultNow(), // Last price update
+
+  // Metadata
+  rawData: jsonb('raw_data'), // Store original post data for reference
+});
