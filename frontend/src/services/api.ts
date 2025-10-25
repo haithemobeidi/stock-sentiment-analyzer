@@ -39,7 +39,7 @@ export interface StockAnalysis {
     };
     // Multi-source breakdown
     sources?: {
-      finnhub?: {
+      twitter?: {
         score: number;
         mentions: number;
         confidence: number;

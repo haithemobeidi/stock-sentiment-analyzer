@@ -13,11 +13,14 @@ Quick reference for all session handoffs. Each session gets one line summary her
 ## Session 3 - 10/24/2025 21:05:38 EST
 **Fixed Environment Variables + Bug Discovery**: Fixed tsx env var loading by correcting flag order (`tsx watch --env-file=.env`). Multi-source sentiment APIs now initialize. Discovered 5 new bugs during user testing: Top 3 duplicates/wrong count, BYND sentiment incorrect, Top 3 not clickable, missing Reddit mentions. **NEXT**: Debug and fix production bugs.
 
+## Session 4 - 10/24/2025 21:24:36 EST
+**Removed Finnhub + Twitter Integration Planning**: Discovered Finnhub social sentiment requires paid tier. Researched Twitter API alternatives (EODHD $?, TwitterAPI.io $15/100k tweets). Removed Finnhub from codebase, adjusted weights to Alpha Vantage 40% + Reddit 60%. Added Twitter placeholder with TODO comments for future. **CRITICAL**: Reddit rate limiting identified as top priority blocker - needs better caching strategy ASAP.
+
 ---
 
 ## Quick Navigation
 
-- **Latest Session**: [Session 3 - 10/24/2025](handoffs/Handoff_10-24-2025_21-05-38_EST.md)
+- **Latest Session**: [Session 4 - 10/24/2025](handoffs/Handoff_10-24-2025_21-24-36_EST.md)
 - **Current Version**: v1.0.0
-- **Status**: Environment variables fixed, multi-source sentiment loading, 5 bugs discovered in testing
-- **Next Focus**: Fix Top 3 duplicates, investigate BYND sentiment accuracy, make Top 3 clickable, fix Reddit mentions
+- **Status**: Two-source sentiment ready (Alpha Vantage + Reddit), Twitter path planned, Reddit caching is critical blocker
+- **Next Focus**: Fix Reddit caching (increase TTL, add manual refresh buttons), test multi-source with major stocks, fix Top 3 bugs

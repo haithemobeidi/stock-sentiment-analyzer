@@ -221,24 +221,24 @@ export const StockDetail: React.FC<StockDetailProps> = ({ analysis, onClose }) =
                   Data Sources ({sentiment.sourcesUsed.length})
                 </h4>
                 <div className="space-y-3">
-                  {sentiment.sources.finnhub && (
+                  {sentiment.sources.twitter && (
                     <div className="bg-gray-800 rounded p-3">
                       <div className="flex justify-between items-center mb-2">
-                        <div className="text-sm font-medium">Finnhub (Reddit + Twitter)</div>
-                        <div className="text-xs text-gray-400">Weight: {(sentiment.sources.finnhub.weight * 100).toFixed(0)}%</div>
+                        <div className="text-sm font-medium">Twitter/X Sentiment</div>
+                        <div className="text-xs text-gray-400">Weight: {(sentiment.sources.twitter.weight * 100).toFixed(0)}%</div>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div>
                           <div className="text-gray-500">Score</div>
-                          <div className="font-semibold">{(sentiment.sources.finnhub.score * 100).toFixed(0)}</div>
+                          <div className="font-semibold">{(sentiment.sources.twitter.score * 100).toFixed(0)}</div>
                         </div>
                         <div>
                           <div className="text-gray-500">Mentions</div>
-                          <div className="font-semibold">{sentiment.sources.finnhub.mentions}</div>
+                          <div className="font-semibold">{sentiment.sources.twitter.mentions}</div>
                         </div>
                         <div>
                           <div className="text-gray-500">Confidence</div>
-                          <div className="font-semibold">{(sentiment.sources.finnhub.confidence * 100).toFixed(0)}%</div>
+                          <div className="font-semibold">{(sentiment.sources.twitter.confidence * 100).toFixed(0)}%</div>
                         </div>
                       </div>
                     </div>

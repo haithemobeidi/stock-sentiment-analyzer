@@ -1,13 +1,17 @@
-import { finnhubService } from './finnhub.service';
 import { alphaVantageService } from './alpha-vantage.service';
 import { redditService } from './reddit.service';
 import { sentimentService } from './sentiment.service';
 
 /**
  * Normalized sentiment data from any source
+ *
+ * TODO: When app is profitable, add Twitter sentiment source:
+ * - Option 1: EODHD Tweets Sentiment API (likely cheapest)
+ * - Option 2: Finnhub Social Sentiment (paid tier)
+ * - Then reweight: Alpha Vantage 30%, Reddit 30%, Twitter 40%
  */
 export interface SentimentDataPoint {
-  source: 'finnhub' | 'alpha_vantage' | 'reddit';
+  source: 'alpha_vantage' | 'reddit' | 'twitter'; // twitter for future use
   score: number; // -1 (bearish) to 1 (bullish)
   confidence: number; // 0 to 1
   mentionCount?: number;
@@ -25,7 +29,7 @@ export interface AggregatedSentiment {
 
   // Source breakdown
   sources: {
-    finnhub?: {
+    twitter?: {
       score: number;
       mentions: number;
       confidence: number;
@@ -55,16 +59,18 @@ export interface AggregatedSentiment {
  * Sentiment Aggregator Service
  *
  * Combines sentiment from multiple sources with intelligent weighting:
- * - Finnhub: 35% (pre-aggregated Reddit + Twitter)
- * - Alpha Vantage: 30% (professional news)
- * - Reddit Direct: 35% (your weighted subreddit scoring)
+ * - Alpha Vantage: 40% (professional news with AI sentiment)
+ * - Reddit Direct: 60% (weighted subreddit scoring - penny stocks 3x)
+ *
+ * FUTURE: Add Twitter sentiment when profitable (EODHD or Finnhub paid)
+ * Then adjust to: Alpha Vantage 30%, Reddit 30%, Twitter 40%
  */
 export class SentimentAggregatorService {
   // Source weights (should total to 1.0)
   private readonly SOURCE_WEIGHTS = {
-    finnhub: 0.35,        // Aggregated social media
-    alphaVantage: 0.30,   // News sentiment
-    reddit: 0.35,         // Direct Reddit with your weighting
+    twitter: 0.0,         // Future: Twitter/X sentiment (EODHD or Finnhub paid)
+    alphaVantage: 0.40,   // News sentiment with AI analysis
+    reddit: 0.60,         // Direct Reddit with weighted subreddit scoring
   };
 
   /**
@@ -78,23 +84,14 @@ export class SentimentAggregatorService {
     const sourcesUsed: string[] = [];
 
     // Fetch from all sources in parallel
-    const [finnhubData, alphaVantageData, redditData] = await Promise.all([
-      this.fetchFinnhubSentiment(ticker),
+    const [alphaVantageData, redditData] = await Promise.all([
       this.fetchAlphaVantageSentiment(ticker),
       this.fetchRedditSentiment(ticker),
     ]);
 
-    // Process Finnhub data
-    if (finnhubData) {
-      dataPoints.push(finnhubData);
-      sources.finnhub = {
-        score: finnhubData.score,
-        mentions: finnhubData.mentionCount || 0,
-        confidence: finnhubData.confidence,
-        weight: this.SOURCE_WEIGHTS.finnhub,
-      };
-      sourcesUsed.push('Finnhub (Reddit + Twitter)');
-    }
+    // TODO: Add Twitter sentiment when profitable
+    // const twitterData = await this.fetchTwitterSentiment(ticker);
+    // if (twitterData) { ... }
 
     // Process Alpha Vantage data
     if (alphaVantageData) {
@@ -125,7 +122,7 @@ export class SentimentAggregatorService {
 
     // Calculate total mentions across all sources
     const totalMentions = (
-      (sources.finnhub?.mentions || 0) +
+      (sources.twitter?.mentions || 0) +
       (sources.alphaVantage?.articles || 0) +
       (sources.reddit?.posts || 0)
     );
@@ -142,25 +139,26 @@ export class SentimentAggregatorService {
   }
 
   /**
-   * Fetch and normalize Finnhub sentiment
+   * Fetch and normalize Twitter sentiment
+   *
+   * TODO: Implement when profitable using EODHD or Finnhub paid tier
+   *
+   * Example implementation for EODHD:
+   * const response = await axios.get('https://eodhd.com/api/tweets-sentiments/AAPL.US', {
+   *   params: { api_token: process.env.EODHD_API_KEY }
+   * });
+   *
+   * return {
+   *   source: 'twitter',
+   *   score: response.data.sentiment, // normalize to -1 to 1
+   *   confidence: response.data.confidence,
+   *   mentionCount: response.data.count,
+   *   timestamp: new Date()
+   * };
    */
-  private async fetchFinnhubSentiment(ticker: string): Promise<SentimentDataPoint | null> {
-    try {
-      const data = await finnhubService.getAverageSentiment(ticker, 7); // Last 7 days
-
-      if (!data) return null;
-
-      return {
-        source: 'finnhub',
-        score: data.averageScore, // Already -1 to 1
-        confidence: data.confidence,
-        mentionCount: data.totalMentions,
-        timestamp: new Date(),
-      };
-    } catch (error) {
-      console.error('Error fetching Finnhub sentiment:', error);
-      return null;
-    }
+  private async fetchTwitterSentiment(ticker: string): Promise<SentimentDataPoint | null> {
+    // Not implemented yet - waiting for profitability
+    return null;
   }
 
   /**
